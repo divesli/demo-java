@@ -1,1 +1,15 @@
+package disruptor;
 
+import com.lmax.disruptor.EventHandler;
+
+/**
+ * @author Administrator
+ * @date 2020/5/21
+ */
+public class SingleHandler implements EventHandler<TestEvent> {
+    @Override
+    public void onEvent(TestEvent event, long sequence, boolean endOfBatch) throws Exception{
+        //System.out.println(event);
+        System.out.println("sequence:" + sequence +", value:" + event.getValue() + ",endOfBatch:" + endOfBatch);
+    }
+}
