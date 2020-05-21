@@ -1,0 +1,77 @@
+package disruptor;
+
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ArrayUtil;
+import com.lmax.disruptor.*;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
+import org.springframework.beans.factory.DisposableBean;
+
+import java.util.concurrent.TimeUnit;
+
+/**
+ * @author Administrator
+ * @date 2020/5/21
+ */
+public class DisruptorServer implements DisposableBean {
+    private Disruptor<TestEvent> disruptor;
+
+    private static final EventTranslatorOneArg<TestEvent, String> translator = (event, sequence, str) -> event.setValue(str);
+    @Override
+    public void destroy() {
+        disruptor.shutdown();
+    }
+
+    public void sendData(String str) {
+        try {
+            RingBuffer<TestEvent> ringBuffer = disruptor.getRingBuffer();
+            if (!ringBuffer.tryPublishEvent(translator, str)) {
+                if (ringBuffer.remainingCapacity() == 0) {
+                    restart();
+                }
+            }
+        } catch (Exception e) {
+
+        }
+    }
+
+    public void restart() {
+        disruptor.shutdown();
+        startDisruptor();
+    }
+
+    public void startDisruptor() {
+        disruptor = new Disruptor<TestEvent>(
+                TestEvent::new,
+                1024 * 1024,
+                ThreadUtil.newNamedThreadFactory("Disruptor-", false),
+                ProducerType.SINGLE,
+                new LiteTimeoutBlockingWaitStrategy(1, TimeUnit.SECONDS)
+        );
+        disruptor.setDefaultExceptionHandler(new ExceptionHandler<TestEvent>() {
+            @Override
+            public void handleEventException(Throwable ex, long sequence, TestEvent event) {
+                System.out.println("Execute exception");
+            }
+
+            @Override
+            public void handleOnStartException(Throwable ex) {
+                System.out.println("Start Disruptor failed.");
+            }
+
+            @Override
+            public void handleOnShutdownException(Throwable ex) {
+                System.out.println("Shutdown Disruptor failed.");
+            }
+        });
+        disruptor.handleEventsWith(new SingleHandler()).then(new ClearHandler());
+       /* MyWorkHandler[] handlers = ArrayUtil.newArray(MyWorkHandler.class, 8);
+        for (int i = 0; i < 8; i++) {
+            handlers[i] = new MyWorkHandler();
+        }
+        disruptor.handleEventsWithWorkerPool(handlers).then(new ClearHandler());*/
+
+        disruptor.start();
+
+    }
+}
