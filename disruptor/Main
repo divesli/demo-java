@@ -1,0 +1,29 @@
+package disruptor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author Administrator
+ * @date 2020/5/21
+ */
+public class Main {
+
+    private static List<Integer> get() {
+        List<Integer> l = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            l.add(i);
+        }
+        return l;
+    }
+    public static void main(String[] args) {
+        DisruptorServer disruptorServer = new DisruptorServer();
+        disruptorServer.startDisruptor();
+        List<Integer> list = get();
+        list.parallelStream().forEach( i -> {
+            disruptorServer.sendData("Hi disruptor" + i);
+        });
+        //disruptorServer.sendData("Hi disruptor");
+        disruptorServer.destroy();
+    }
+}
