@@ -1,0 +1,16 @@
+package disruptor;
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.Serializable;
+
+/**
+ * @author Administrator
+ * @date 2020/5/21
+ */
+@Setter
+@Getter
+public class TestEvent  implements Serializable {
+    private String value;
+}
